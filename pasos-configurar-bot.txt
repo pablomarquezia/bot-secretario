@@ -42,6 +42,7 @@
      DURACION_TURNO = 60 (minutos)
      HORA_APERTURA = 8
      HORA_CIERRE = 18
+     ADMIN_TOKEN = clave-secreta-para-panel
    - Create Web Service
 
 7. Twilio
@@ -51,4 +52,5 @@
    - Method: HTTP POST
    - Save
 
-8. Listo. El cliente escribe al número sandbox de Twilio y el bot responde.
+8. El dueño puede editar la info del negocio desde:
+   https://bot-secretario-[cliente].onrender.com/admin/info?token=clave-secreta-para-panel

@@ -52,10 +52,20 @@ Al día siguiente → el cliente recibe un recordatorio automático
 | `TWILIO_WHATSAPP` | — | Número de Twilio (ej: `whatsapp:+14155238886`) |
 | `BARBERO_PHONE` | — | WhatsApp del dueño para alertas |
 | `NEGOCIO` | `barbería` | Tipo de negocio (cambia el prompt de la IA) |
-| `INFO_NEGOCIO` | — | Info del negocio: dirección, precios, horarios, redes. Se lo contás a la IA para que responda preguntas |
+| `INFO_NEGOCIO` | — | Info del negocio: dirección, precios, horarios, redes. Respaldo si la db está vacía |
 | `DURACION_TURNO` | `60` | Minutos por turno |
 | `HORA_APERTURA` | `8` | Hora de apertura |
 | `HORA_CIERRE` | `18` | Hora de cierre |
+| `ADMIN_TOKEN` | — | Clave para acceder al panel admin |
+
+### Panel admin
+
+Protegido con `ADMIN_TOKEN`. El dueño puede:
+
+- **Ver chats**: `https://tu-url.onrender.com/admin/chats?token=clave`
+- **Editar info del negocio**: `https://tu-url.onrender.com/admin/info?token=clave`
+
+La info se guarda en la base de datos y el bot responde automáticamente con esos datos sin tocar código.
 
 ### Comandos rápidos
 
