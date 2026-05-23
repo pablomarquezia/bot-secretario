@@ -7,6 +7,12 @@ HORA_CIERRE = 18
 DURACION_TURNO = 60
 DIAS_A_CONSULTAR = 5
 
+
+def obtener_service():
+    creds = autenticar()
+    return build("calendar", "v3", credentials=creds)
+
+
 def obtener_eventos(service, dias=DIAS_A_CONSULTAR):
     now = datetime.now(timezone.utc)
     fin = now + timedelta(days=dias)
@@ -19,9 +25,25 @@ def obtener_eventos(service, dias=DIAS_A_CONSULTAR):
     ).execute()
     return eventos.get("items", [])
 
-def slots_libres():
-    creds = autenticar()
-    service = build("calendar", "v3", credentials=creds)
+
+def slot_libre(service, fecha: str, hora: str) -> bool:
+    inicio = datetime.fromisoformat(f"{fecha}T{hora}:00-03:00")
+    fin = inicio + timedelta(minutes=DURACION_TURNO)
+    eventos = obtener_eventos(service, dias=7)
+    for ev in eventos:
+        try:
+            oci = datetime.fromisoformat(ev["start"].get("dateTime"))
+            ocf = datetime.fromisoformat(ev["end"].get("dateTime"))
+        except (ValueError, TypeError):
+            continue
+        if inicio < ocf and fin > oci:
+            return False
+    return True
+
+
+def slots_libres(service=None):
+    if service is None:
+        service = obtener_service()
     eventos = obtener_eventos(service)
 
     ocupados = []
@@ -82,8 +104,7 @@ def reservar_turno(fecha: str, hora: str, nombre: str, telefono: str) -> str:
         "end": {"dateTime": fin, "timeZone": "America/Argentina/Buenos_Aires"},
     }
 
-    creds = autenticar()
-    service = build("calendar", "v3", credentials=creds)
+    service = obtener_service()
     creado = service.events().insert(calendarId="primary", body=evento).execute()
     return creado.get("htmlLink")
 

@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Form, Response
-from calendario import slots_libres, reservar_turno
 from db import inicializar, guardar_mensaje, obtener_historial
 from bot import procesar
 

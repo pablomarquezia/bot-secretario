@@ -4,11 +4,14 @@ from datetime import date, datetime
 from dotenv import load_dotenv
 from groq import Groq
 from pydantic import BaseModel, Field
-from calendario import slots_libres, reservar_turno
+from calendario import slots_libres, slot_libre, reservar_turno, obtener_service
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 HOY = date.today().isoformat()
+
+DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 
 class AnalisisMensaje(BaseModel):
@@ -21,16 +24,42 @@ class AnalisisMensaje(BaseModel):
 
 SYSTEM_PROMPT = f"""
 Hoy es {HOY}. Sos el secretario virtual de una barbería en Santa Fe.
-Analizá el mensaje y respondé con JSON estructurado.
+
+Analizá el mensaje y respondé JSON con estas claves exactas:
+- intencion: 'saludar', 'agendar_turno', 'cancelar_turno', 'consultar_disponibilidad' o 'fuera_de_tema'
+- fecha: extraé la fecha que pida el usuario (YYYY-MM-DD). Si no menciona, poné 'no_aplica'.
+- hora: extraé la hora que pida (HH:MM). Si no menciona, poné 'no_aplica'.
+- nombre_cliente: el nombre del cliente. Si no lo dice, poné 'desconocido'.
+- respuesta_whatsapp: respuesta corta y amigable usando 'vos' santafesino. Máximo 200 caracteres.
 
 Reglas:
-- Si te piden horarios disponibles, decí que consultes de nuevo para revisar la agenda.
-- Si te piden agendar un turno con fecha y hora específica, confirmá el turno.
-- Si saludan, responded amablemente.
-- Si hablan de otra cosa, poné intención 'fuera_de_tema'.
-- Usá 'vos' natural tipo santafesino.
-- No des diagnósticos ni consejos médicos.
+- Si preguntan por horarios, poné intencion 'consultar_disponibilidad' y decí algo como "Dame un toque y reviso la agenda".
+- Si piden turno con fecha y hora, poné intencion 'agendar_turno'.
+- Si saludan, 'saludar'.
+- Si quieren cancelar, 'cancelar_turno'.
+- Cualquier otro tema: 'fuera_de_tema' y rechazá amablemente.
 """
+
+
+def _formatear_libres(libres: list) -> str:
+    dts = [datetime.fromisoformat(s) for s in libres]
+    grupos = {}
+    for dt in dts:
+        grupos.setdefault(dt.date(), []).append(dt)
+    lineas = []
+    for fecha, slots in grupos.items():
+        slots.sort()
+        inicio = slots[0]
+        fin = slots[0]
+        for s in slots[1:]:
+            if s.hour == fin.hour + 1:
+                fin = s
+            else:
+                lineas.append(f"{DIAS[inicio.weekday()]} {inicio.day} de {MESES[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
+                inicio = s
+                fin = s
+        lineas.append(f"{DIAS[inicio.weekday()]} {inicio.day} de {MESES[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
+    return "Horarios libres:\n" + "\n".join(lineas)
 
 
 def procesar(historial: list) -> dict:
@@ -52,7 +81,7 @@ def procesar(historial: list) -> dict:
             }
         )
         data = json.loads(completion.choices[0].message.content)
-    except Exception as e:
+    except Exception:
         data = {
             "intencion": "error",
             "fecha": "no_aplica",
@@ -61,34 +90,22 @@ def procesar(historial: list) -> dict:
             "respuesta_whatsapp": "Disculpame, tuve un problema interno. ¿Me repetís?"
         }
 
+    service = obtener_service()
+
     if data["intencion"] == "agendar_turno" and data["fecha"] != "no_aplica" and data["hora"] != "no_aplica":
-        link = reservar_turno(data["fecha"], data["hora"], data["nombre_cliente"], "vía WhatsApp")
-        data["respuesta_whatsapp"] += f" Te confirmo el turno para el {data['fecha']} a las {data['hora']}."
+        if slot_libre(service, data["fecha"], data["hora"]):
+            reservar_turno(data["fecha"], data["hora"], data["nombre_cliente"], "vía WhatsApp")
+            data["respuesta_whatsapp"] = f"Listo {data['nombre_cliente']}, te confirmo el turno para el {data['fecha']} a las {data['hora']}."
+        else:
+            data["respuesta_whatsapp"] = "Ese horario ya no está disponible, perdón. ¿Querés que te muestre los libres?"
+
+    if data["intencion"] == "cancelar_turno":
+        data["respuesta_whatsapp"] = "Para cancelar un turno necesito que me digas el día y horario exacto, o hablale directo al barbero."
 
     if data["intencion"] == "consultar_disponibilidad":
-        libres = slots_libres()
+        libres = slots_libres(service)
         if libres:
-            dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-            meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-            dts = [datetime.fromisoformat(s) for s in libres]
-            grupos = {}
-            for dt in dts:
-                clave = dt.date()
-                grupos.setdefault(clave, []).append(dt)
-            lineas = []
-            for fecha, slots in grupos.items():
-                slots.sort()
-                inicio = slots[0]
-                fin = slots[0]
-                for s in slots[1:]:
-                    if s.hour == fin.hour + 1:
-                        fin = s
-                    else:
-                        lineas.append(f"{dias[inicio.weekday()]} {inicio.day} de {meses[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
-                        inicio = s
-                        fin = s
-                lineas.append(f"{dias[inicio.weekday()]} {inicio.day} de {meses[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
-            data["respuesta_whatsapp"] = "Horarios libres:\n" + "\n".join(lineas)
+            data["respuesta_whatsapp"] = _formatear_libres(libres)
         else:
             data["respuesta_whatsapp"] = "No tengo horarios libres esta semana, disculpame."
 
