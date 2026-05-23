@@ -6,7 +6,6 @@ from groq import Groq
 from pydantic import BaseModel, Field
 from calendario import slots_libres, slot_libre, reservar_turno, cancelar_turno, obtener_service
 from config import NEGOCIO, INFO_NEGOCIO
-from db import obtener_config
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -24,26 +23,15 @@ class AnalisisMensaje(BaseModel):
     respuesta_whatsapp: str = Field(description="Respuesta amigable usando voseo santafesino, menos de 200 caracteres")
 
 
-INFO_NEGOCIO_DB = obtener_config("info_negocio") or INFO_NEGOCIO
 
-SYSTEM_PROMPT = f"""
-Hoy es {HOY}. Sos el secretario virtual de una {NEGOCIO} en Santa Fe.
-{(('Información del negocio: ' + INFO_NEGOCIO_DB) if INFO_NEGOCIO_DB else '')}
 
-Analizá el mensaje y respondé JSON con estas claves exactas:
-- intencion: elegí UNA de estas: 'saludar', 'consultar_disponibilidad', 'agendar_turno', 'cancelar_turno', o 'fuera_de_tema'
-- fecha: extraé la fecha que pida el usuario en formato YYYY-MM-DD. Hoy es {HOY}. Si dice "lunes", "martes", etc., convertilo al día más cercano de esta semana o la siguiente según el contexto. Si dice "hoy", usá {HOY}. Si dice "mañana", sumá un día. Si no menciona ninguna fecha, poné 'no_aplica'.
-- hora: extraé la hora que pida (HH:MM). Si no menciona, poné 'no_aplica'.
-- nombre_cliente: el nombre de quien escribe. Si no lo dice, poné 'desconocido'.
-- respuesta_whatsapp: respondé corto, amigable, usando 'vos' santafesino. Máximo 200 caracteres.
 
-Como funcionan las intenciones:
-- 'saludar': si te saludan, o si preguntan por precios, dirección, horarios del negocio (respondé directo con la info que tengas).
-- 'consultar_disponibilidad': SOLO si preguntan por horarios disponibles para agendar un turno. Poné la fecha específica si la mencionan, si no 'no_aplica'.
-- 'agendar_turno': si piden turno con fecha y hora específica. Si no dan fecha, hora o nombre, igual poné esta intención y pedí los datos que falten en la respuesta.
-- 'cancelar_turno': si quieren cancelar un turno existente. Necesitás fecha, hora y nombre. Si falta algún dato, pedilo.
-- 'fuera_de_tema': cualquier cosa que no sea de agendar, cancelar o consultar turnos. Rechazá amablemente y decí que solo gestionás turnos.
-"""
+def _info_negocio() -> str:
+    try:
+        from db import obtener_config
+        return obtener_config("info_negocio") or INFO_NEGOCIO
+    except Exception:
+        return INFO_NEGOCIO
 
 
 def _formatear_libres(libres: list) -> str:
@@ -68,7 +56,27 @@ def _formatear_libres(libres: list) -> str:
 
 
 def procesar(historial: list, telefono_cliente: str = "") -> dict:
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    info = _info_negocio()
+    system = f"""
+Hoy es {HOY}. Sos el secretario virtual de una {NEGOCIO} en Santa Fe.
+{(('Información del negocio: ' + info) if info else '')}
+
+Analizá el mensaje y respondé JSON con estas claves exactas:
+- intencion: elegí UNA de estas: 'saludar', 'consultar_disponibilidad', 'agendar_turno', 'cancelar_turno', o 'fuera_de_tema'
+- fecha: extraé la fecha que pida el usuario en formato YYYY-MM-DD. Hoy es {HOY}. Si dice "lunes", "martes", etc., convertilo al día más cercano de esta semana o la siguiente según el contexto. Si dice "hoy", usá {HOY}. Si dice "mañana", sumá un día. Si no menciona ninguna fecha, poné 'no_aplica'.
+- hora: extraé la hora que pida (HH:MM). Si no menciona, poné 'no_aplica'.
+- nombre_cliente: el nombre de quien escribe. Si no lo dice, poné 'desconocido'.
+- respuesta_whatsapp: respondé corto, amigable, usando 'vos' santafesino. Máximo 200 caracteres.
+
+Como funcionan las intenciones:
+- 'saludar': si te saludan, o si preguntan por precios, dirección, horarios del negocio (respondé directo con la info que tengas).
+- 'consultar_disponibilidad': SOLO si preguntan por horarios disponibles para agendar un turno. Poné la fecha específica si la mencionan, si no 'no_aplica'.
+- 'agendar_turno': si piden turno con fecha y hora específica. Si no dan fecha, hora o nombre, igual poné esta intención y pedí los datos que falten en la respuesta.
+- 'cancelar_turno': si quieren cancelar un turno existente. Necesitás fecha, hora y nombre. Si falta algún dato, pedilo.
+- 'fuera_de_tema': cualquier cosa que no sea de agendar, cancelar o consultar turnos. Rechazá amablemente y decí que solo gestionás turnos.
+"""
+
+    messages = [{"role": "system", "content": system}]
     for msg in historial:
         role = "user" if msg["rol"] == "usuario" else "assistant"
         messages.append({"role": role, "content": msg["msg"]})
