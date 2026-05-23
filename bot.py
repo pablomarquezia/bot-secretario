@@ -6,6 +6,7 @@ from groq import Groq
 from pydantic import BaseModel, Field
 from calendario import slots_libres, slot_libre, reservar_turno, cancelar_turno, obtener_service
 from config import NEGOCIO, INFO_NEGOCIO
+from db import obtener_config
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -23,9 +24,11 @@ class AnalisisMensaje(BaseModel):
     respuesta_whatsapp: str = Field(description="Respuesta amigable usando voseo santafesino, menos de 200 caracteres")
 
 
+INFO_NEGOCIO_DB = obtener_config("info_negocio") or INFO_NEGOCIO
+
 SYSTEM_PROMPT = f"""
 Hoy es {HOY}. Sos el secretario virtual de una {NEGOCIO} en Santa Fe.
-{('Información del negocio: ' + INFO_NEGOCIO) if INFO_NEGOCIO else ''}
+{(('Información del negocio: ' + INFO_NEGOCIO_DB) if INFO_NEGOCIO_DB else '')}
 
 Analizá el mensaje y respondé JSON con estas claves exactas:
 - intencion: elegí UNA de estas: 'saludar', 'consultar_disponibilidad', 'agendar_turno', 'cancelar_turno', o 'fuera_de_tema'

@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Form, Response, Request
 from twilio.rest import Client
-from db import inicializar, guardar_mensaje, obtener_historial, teléfonos_con_chats, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida
+from db import inicializar, guardar_mensaje, obtener_historial, teléfonos_con_chats, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida, obtener_config, guardar_config
 from bot import procesar
 
 app = FastAPI()
@@ -91,7 +91,7 @@ def admin_chats(token: str = ""):
     if not ADMIN_TOKEN or token != ADMIN_TOKEN:
         return Response(status_code=401)
     teléfonos = teléfonos_con_chats()
-    html = "<h1>Chats</h1>"
+    html = "<h1>Chats</h1><p><a href='/admin/info?token=" + token + "'>Editar info del negocio</a></p>"
     for tel in teléfonos:
         msgs = obtener_historial(tel, 50)
         html += f"<details><summary><b>{tel}</b> ({len(msgs)} msgs)</summary>"
@@ -100,6 +100,31 @@ def admin_chats(token: str = ""):
             html += f"<p><b style='color:{color}'>{m['rol']}:</b> {m['msg']}</p>"
         html += "</details><hr>"
     return Response(content=html, media_type="text/html")
+
+
+@app.get("/admin/info")
+def admin_info(token: str = ""):
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        return Response(status_code=401)
+    valor = obtener_config("info_negocio")
+    html = f"""<h1>Info del negocio</h1>
+<form method='post'>
+<textarea name='info' rows='6' cols='60'>{valor}</textarea><br>
+<input type='hidden' name='token' value='{token}'>
+<button type='submit'>Guardar</button>
+</form>
+<p><a href='/admin/chats?token={token}'>← Volver a chats</a></p>"""
+    return Response(content=html, media_type="text/html")
+
+
+@app.post("/admin/info")
+async def admin_info_post(request: Request):
+    form = await request.form()
+    token = form.get("token", "")
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        return Response(status_code=401)
+    guardar_config("info_negocio", form.get("info", ""))
+    return Response(content="<h1>Guardado ✅</h1><p><a href='/admin/info?token=" + token + "'>Volver</a></p>", media_type="text/html")
 
 
 @app.get("/meta-webhook")

@@ -18,6 +18,7 @@ def inicializar():
         """)
     inicializar_turnos()
     inicializar_alertas()
+    inicializar_config()
 
 def guardar_mensaje(telefono: str, rol: str, mensaje: str):
     with _conectar() as conn:
@@ -115,3 +116,23 @@ def alerta_pendiente() -> dict | None:
 def marcar_alerta_respondida(alerta_id: int):
     with _conectar() as conn:
         conn.execute("UPDATE alertas SET respondida = 1 WHERE id = ?", (alerta_id,))
+
+
+def inicializar_config():
+    with _conectar() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS config (
+                clave TEXT PRIMARY KEY,
+                valor TEXT NOT NULL
+            )
+        """)
+        conn.execute("INSERT OR IGNORE INTO config (clave, valor) VALUES ('info_negocio', '')")
+
+def obtener_config(clave: str) -> str:
+    with _conectar() as conn:
+        row = conn.execute("SELECT valor FROM config WHERE clave = ?", (clave,)).fetchone()
+    return row[0] if row else ""
+
+def guardar_config(clave: str, valor: str):
+    with _conectar() as conn:
+        conn.execute("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)", (clave, valor))
