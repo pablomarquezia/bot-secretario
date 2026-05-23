@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap Interactivo: Bot de Turnos WhatsApp</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+        }
+        
+        .heading-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        /* Glow animations */
+        .glow-emerald {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+        .glow-teal {
+            box-shadow: 0 0 20px rgba(20, 184, 166, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-200 flex flex-col justify-between selection:bg-teal-500 selection:text-slate-900">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-teal-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-teal-500/10">
+                    <svg class="w-7 h-7 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="heading-font font-bold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-400">Roadmap Interactivo</h1>
+                    <p class="text-xs text-slate-400">SaaS Bot de Turnos WhatsApp • Planificador de Tareas</p>
+                </div>
+            </div>
+            
+            <!-- Global Stats Bar -->
+            <div class="flex items-center gap-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl px-5 py-2.5">
+                <div class="text-center">
+                    <span class="block text-xs text-slate-500 font-medium uppercase tracking-wider">Progreso Total</span>
+                    <span id="global-progress-txt" class="text-lg font-bold text-teal-400 heading-font">0%</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-500 font-medium uppercase tracking-wider">Tareas Pendientes</span>
+                    <span id="pending-tasks-count" class="text-lg font-bold text-indigo-400 heading-font">0 / 0</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-500 font-medium uppercase tracking-wider">Semanas Est.</span>
+                    <span id="weeks-estimated" class="text-lg font-bold text-emerald-400 heading-font">6 semanas</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- COLUMNA IZQUIERDA: Selector de Fases y Calculadora (Lg: 4/12) -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Calculadora Personalizada de Tiempo -->
+            <div class="bg-slate-900/40 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 glow-teal">
+                <h3 class="heading-font font-bold text-base text-slate-100 flex items-center gap-2 mb-3">
+                    <span>⏱️</span> Presupuesto de Tiempo
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Ajustá tus horas disponibles por semana para recalcular la fecha estimada de finalización.</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-300 font-medium mb-1">
+                            <span>Horas semanales:</span>
+                            <span id="hours-display-val" class="text-teal-400 font-bold">4 horas</span>
+                        </div>
+                        <input id="hours-calculator-range" type="range" min="2" max="15" value="4" oninput="calculateDeliveryTime(this.value)" class="w-full accent-teal-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                    </div>
+                    
+                    <div class="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 text-xs space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Esfuerzo Total Est:</span>
+                            <span class="text-slate-300 font-mono">24 Horas Netas</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Semanas requeridas:</span>
+                            <span id="calc-weeks-result" class="text-emerald-400 font-bold font-mono">6 Semanas</span>
+                        </div>
+                        <div class="flex justify-between border-t border-slate-800/60 pt-2 mt-2">
+                            <span class="text-slate-400 font-semibold">Listo para Demo en:</span>
+                            <span id="calc-date-result" class="text-indigo-400 font-bold font-mono">Julio 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menú Rápido de Fases -->
+            <div class="bg-slate-900/40 border border-slate-800/80 backdrop-blur-md rounded-2xl p-4">
+                <h3 class="heading-font font-bold text-xs text-slate-400 uppercase tracking-wider px-2 mb-3">Índice de Fases</h3>
+                <nav class="space-y-1">
+                    <button onclick="scrollToPhase('fase1')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>🐍 Fase 1: Motor Local & IA</span>
+                        <span id="phase1-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/4</span>
+                    </button>
+                    <button onclick="scrollToPhase('fase2')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>📅 Fase 2: Google Calendar</span>
+                        <span id="phase2-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/4</span>
+                    </button>
+                    <button onclick="scrollToPhase('fase3')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>🌐 Fase 3: Servidor FastAPI</span>
+                        <span id="phase3-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/4</span>
+                    </button>
+                    <button onclick="scrollToPhase('fase4')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>💬 Fase 4: Enlace WhatsApp</span>
+                        <span id="phase4-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/4</span>
+                    </button>
+                    <button onclick="scrollToPhase('fase5')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>☁️ Fase 5: Servidor & Deploy</span>
+                        <span id="phase5-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/3</span>
+                    </button>
+                    <button onclick="scrollToPhase('fase6')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-800/30 hover:bg-slate-800 text-slate-300 transition-all">
+                        <span>🧉 Fase 6: Negocio & Venta</span>
+                        <span id="phase6-badge" class="bg-slate-900 text-teal-400 border border-teal-500/10 px-2 py-0.5 rounded text-[10px]">0/4</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Botón Limpiar Progreso -->
+            <button onclick="resetAllProgress()" class="w-full bg-slate-950 hover:bg-slate-900 text-slate-500 hover:text-slate-300 border border-slate-800/60 rounded-xl py-2.5 text-xs font-medium transition-all">
+                Reiniciar todo el progreso
+            </button>
+        </div>
+
+        <!-- COLUMNA DERECHA: Listado de Fases, Tareas y Fichas Técnicas (Lg: 8/12) -->
+        <div class="lg:col-span-8 space-y-10">
+
+            <!-- FASE 1 -->
+            <section id="fase1" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 1 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">🐍 Fase 1: El Motor Local y de Inteligencia Artificial</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Fase Local</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Configuraremos el cerebro de la secretaria virtual. Usando Python y modelos de lenguaje de OpenAI o Antropic, forzaremos al modelo a darnos salidas JSON estructuradas con los datos del cliente.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 1.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-1-1" onchange="updateTaskState('1-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-1-1" class="block font-bold text-xs text-slate-200 cursor-pointer">1.1 Configuración de entorno y API Keys</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Crear el entorno virtual con venv, instalar dependencias iniciales (openai, python-dotenv, pydantic) y resguardar la API Key en un archivo .env.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 1.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-1-2" onchange="updateTaskState('1-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-1-2" class="block font-bold text-xs text-slate-200 cursor-pointer">1.2 Estructuración del System Prompt Hermético</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Definir las directrices estrictas de la secretaria (no dar diagnósticos médicos, derivar si es necesario, mantenerse 100% en el rol de agenda).</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 1.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-1-3" onchange="updateTaskState('1-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-1-3" class="block font-bold text-xs text-slate-200 cursor-pointer">1.3 Structured Outputs con Pydantic</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Escribir el modelo de Pydantic en Python para forzar a la API a devolver un JSON con campos obligatorios: fecha, hora, nombre_cliente y confirmacion.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 1.4 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-1-4" onchange="updateTaskState('1-4')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-1-4" class="block font-bold text-xs text-slate-200 cursor-pointer">1.4 Mockup Interactivo de Consola</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Montar un bucle while interactivo en la consola (con la función input()) para simular el chat, evaluando la precisión del modelo en tiempo real.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Accordion Fase 1 -->
+                <div class="mt-4 border-t border-slate-800/60 pt-4">
+                    <button onclick="toggleAccordion('code-fase1')" class="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Ver Machete de Código para Fase 1 (Structured Outputs)
+                    </button>
+                    <div id="code-fase1" class="hidden mt-3 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto text-[11px] font-mono leading-relaxed">
+<pre class="text-emerald-400"># Estructura lógica en Python para la Fase 1
+from pydantic import BaseModel, Field
+from typing import Optional
+from openai import OpenAI
+
+class IntencionTurno(BaseModel):
+    intencion: str = Field(description="Valores: CONSULTAR, AGENDAR, CANCELAR, OTRAS")
+    fecha: Optional[str] = Field(None, description="Fecha extraída en formato AAAA-MM-DD")
+    hora: Optional[str] = Field(None, description="Hora en formato HH:MM")
+    nombre_cliente: Optional[str] = Field(None, description="Nombre del cliente si lo dice")
+    motivo_consulta: Optional[str] = Field(None)
+
+# La llamada estructurada usando el modelo
+client = OpenAI()
+completion = client.beta.chat.completions.parse(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "Sos la secretaria. Analizá los mensajes de agenda."},
+        {"role": "user", "content": "Quiero reservar el viernes a las 14:00 para hacerme las manos. Me llamo María."}
+    ],
+    response_format=IntencionTurno,
+)
+print(completion.choices[0].message.parsed)</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FASE 2 -->
+            <section id="fase2" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 2 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">📅 Fase 2: Conexión con Google Calendar</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Integración</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Haremos que el script de Python sea capaz de leer la agenda real del profesional. El bot actuará como un lector inteligente para detectar huecos vacíos y bloquear turnos confirmados.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 2.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-2-1" onchange="updateTaskState('2-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-2-1" class="block font-bold text-xs text-slate-200 cursor-pointer">2.1 Alta en Google Cloud Console</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Crear un proyecto de desarrollador de Google, habilitar Google Calendar API, configurar la pantalla de consentimiento OAuth y descargar credentials.json.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 2.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-2-2" onchange="updateTaskState('2-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-2-2" class="block font-bold text-xs text-slate-200 cursor-pointer">2.2 Flujo OAuth y token.json</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Codear el flujo local en Python que solicita permisos de lectura/escritura del calendario por primera vez y guarda el token.json para accesos futuros automáticos.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 2.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-2-3" onchange="updateTaskState('2-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-2-3" class="block font-bold text-xs text-slate-200 cursor-pointer">2.3 Algoritmo de Búsqueda de Libres (Slots)</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Escribir una función que obtenga los eventos de los próximos 5 días, los reste de las horas de trabajo permitidas y devuelva un listado de huecos libres.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 2.4 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-2-4" onchange="updateTaskState('2-4')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-2-4" class="block font-bold text-xs text-slate-200 cursor-pointer">2.4 Función de Reserva de Citas</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Programar la función de escritura de eventos (events().insert) que asigne el título, descripción con el celular y bloquee los minutos específicos de la sesión en el calendario.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Accordion Fase 2 -->
+                <div class="mt-4 border-t border-slate-800/60 pt-4">
+                    <button onclick="toggleAccordion('code-fase2')" class="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Ver Machete de Código para Fase 2 (Google Calendar)
+                    </button>
+                    <div id="code-fase2" class="hidden mt-3 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto text-[11px] font-mono leading-relaxed">
+<pre class="text-emerald-400"># Estructura de escritura en Google Calendar
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+
+def reservar_turno(fecha_iso, hora_iso, cliente_nombre, cliente_tel):
+    creds = Credentials.from_authorized_user_file('token.json')
+    service = build('calendar', 'v3', credentials=creds)
+    
+    start_time = f"{fecha_iso}T{hora_iso}:00-03:00"  # Huso horario Argentina
+    end_time = f"{fecha_iso}T{int(hora_iso.split(':')[0])+1}:{hora_iso.split(':')[1]}:00-03:00" # 1h despues
+    
+    event = {
+        'summary': f'Turno: {cliente_nombre}',
+        'description': f'Registrado por Bot Secretario. Tel: {cliente_tel}',
+        'start': {'dateTime': start_time, 'timeZone': 'America/Argentina/Buenos_Aires'},
+        'end': {'dateTime': end_time, 'timeZone': 'America/Argentina/Buenos_Aires'},
+    }
+    
+    event_result = service.events().insert(calendarId='primary', body=event).execute()
+    return event_result.get('htmlLink')</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FASE 3 -->
+            <section id="fase3" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 3 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">🌐 Fase 3: Servidor FastAPI y Webhooks</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Backend</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Levantaremos nuestra propia API web en Python para recibir las peticiones externas. Configuraremos Ngrok en la consola de Linux para habilitar una dirección pública cifrada segura.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 3.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-3-1" onchange="updateTaskState('3-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-3-1" class="block font-bold text-xs text-slate-200 cursor-pointer">3.1 API básica con FastAPI</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Escribir una aplicación mínima con FastAPI que responda a peticiones de diagnóstico en la raíz (GET /) y que corra localmente con uvicorn en el puerto 8000.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 3.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-3-2" onchange="updateTaskState('3-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-3-2" class="block font-bold text-xs text-slate-200 cursor-pointer">3.2 Instalación y tunelización de Ngrok</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Instalar ngrok mediante Snap o terminal de Linux, autenticar la cuenta de desarrollador gratuita y correr 'ngrok http 8000' para conseguir la URL con SSL pública.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 3.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-3-3" onchange="updateTaskState('3-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-3-3" class="block font-bold text-xs text-slate-200 cursor-pointer">3.3 Ruta de Escucha de Mensajes (Webhook)</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Programar un endpoint de tipo POST (/webhook) que reciba los parámetros estructurados de los mensajes entrantes (remitente, texto, ID de mensaje).</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 3.4 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-3-4" onchange="updateTaskState('3-4')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-3-4" class="block font-bold text-xs text-slate-200 cursor-pointer">3.4 Control de sesiones temporales (Memoria)</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Montar un diccionario nativo en Python que almacene la historia de conversación por número telefónico (memoria del chat) para que el bot no sufra de amnesia entre mensajes.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Accordion Fase 3 -->
+                <div class="mt-4 border-t border-slate-800/60 pt-4">
+                    <button onclick="toggleAccordion('code-fase3')" class="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Ver Machete de Código para Fase 3 (FastAPI Server)
+                    </button>
+                    <div id="code-fase3" class="hidden mt-3 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto text-[11px] font-mono leading-relaxed">
+<pre class="text-emerald-400"># Servidor básico FastAPI preparado para recibir Webhooks
+from fastapi import FastAPI, Form
+import uvicorn
+
+app = FastAPI()
+
+# Memoria temporal de chat en memoria
+MEMORIA_CONVERSACION = {}
+
+@app.post("/webhook")
+async def receive_message(From: str = Form(...), Body: str = Form(...)):
+    print(f"Mensaje de {From}: {Body}")
+    
+    # Cargar o inicializar historial
+    if From not in MEMORIA_CONVERSACION:
+        MEMORIA_CONVERSACION[From] = []
+        
+    MEMORIA_CONVERSACION[From].append({"role": "user", "content": Body})
+    
+    # Procesar lógica de respuesta y retornar
+    return {"status": "success"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FASE 4 -->
+            <section id="fase4" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 4 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">💬 Fase 4: Enlace con WhatsApp</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Conectividad</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Conectaremos las piezas lógicas con el servicio de mensajería real. Al finalizar esta fase, el bot responderá los mensajes de tu celular de prueba usando un número asignado.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 4.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-4-1" onchange="updateTaskState('4-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-4-1" class="block font-bold text-xs text-slate-200 cursor-pointer">4.1 Registro en sandbox de Twilio / Meta API</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Abrir cuenta gratuita en Twilio, activar el módulo sandbox de WhatsApp y enlazar tu celular personal mandando el código de activación indicado.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 4.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-4-2" onchange="updateTaskState('4-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-4-2" class="block font-bold text-xs text-slate-200 cursor-pointer">4.2 Enlace de Webhook en la Nube</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Vincular tu URL segura de Ngrok en la sección de configuración de Webhooks de Twilio para que le reenvíe todas las notificaciones entrantes de mensajes a tu FastAPI.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 4.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-4-3" onchange="updateTaskState('4-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-4-3" class="block font-bold text-xs text-slate-200 cursor-pointer">4.3 Módulo de Envío de Mensajes Salientes</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Escribir una función auxiliar en Python que use el SDK de Twilio o requests para despachar respuestas en formato texto directo al remitente original.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 4.4 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-4-4" onchange="updateTaskState('4-4')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-4-4" class="block font-bold text-xs text-slate-200 cursor-pointer">4.4 Pruebas extremo a extremo (E2E)</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Enviar mensajes informales por tu WhatsApp para reservar turnos ficticios y verificar que se creen correctamente en el calendario.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Accordion Fase 4 -->
+                <div class="mt-4 border-t border-slate-800/60 pt-4">
+                    <button onclick="toggleAccordion('code-fase4')" class="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Ver Machete de Código para Fase 4 (Envío WhatsApp Twilio)
+                    </button>
+                    <div id="code-fase4" class="hidden mt-3 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto text-[11px] font-mono leading-relaxed">
+<pre class="text-emerald-400"># Envío de mensajes de respuesta usando Twilio
+from twilio.rest import Client
+import os
+
+def enviar_whatsapp(destinatario, mensaje_texto):
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+    auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+    
+    client = Client(account_sid, auth_token)
+    
+    message = client.messages.create(
+        from_='whatsapp:+14155238886', # Número de Sandbox de Twilio
+        body=mensaje_texto,
+        to=destinatario # ej: 'whatsapp:+549342XXXXXXX'
+    )
+    return message.sid</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FASE 5 -->
+            <section id="fase5" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 5 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">☁️ Fase 5: Servidor & Deploy en Producción</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Infraestructura</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Migraremos el bot de tu computadora a un servidor en la nube permanente para que funcione sin interrupciones las 24 horas del día.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 5.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-5-1" onchange="updateTaskState('5-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-5-1" class="block font-bold text-xs text-slate-200 cursor-pointer">5.1 Base de datos SQLite para persistencia</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Migrar el almacenamiento en memoria volátil de Python a una base de datos ligera SQLite local para que las conversaciones no se borren cuando se reinicie el servidor.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 5.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-5-2" onchange="updateTaskState('5-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-5-2" class="block font-bold text-xs text-slate-200 cursor-pointer">5.2 Estructura Git y Archivo requirements.txt</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Inicializar un repositorio Git, añadir un archivo .gitignore (fundamental para ignorar .env y token.json) y congelar las dependencias con pip freeze.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 5.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-5-3" onchange="updateTaskState('5-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-5-3" class="block font-bold text-xs text-slate-200 cursor-pointer">5.3 Despliegue gratuito en Railway o Render</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Vincular tu cuenta de GitHub con Render/Railway, crear un Web Service, definir las variables de entorno (.env) en su panel y lanzar el bot en la nube.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FASE 6 -->
+            <section id="fase6" class="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 relative overflow-hidden transition-all hover:border-slate-700/80">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Semana 6 • Esfuerzo: 4 Horas</span>
+                        <h2 class="heading-font text-xl font-bold text-slate-100 mt-1">🧉 Fase 6: Negocio y Validación Comercial en Santa Fe</h2>
+                    </div>
+                    <span class="text-xs bg-slate-800/80 text-slate-400 border border-slate-700/50 px-3 py-1 rounded-full font-medium">Comercial</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Con tu bot 24/7 funcionando de forma segura, saldremos a validar el producto comercialmente en la ciudad con profesionales de confianza.</p>
+
+                <!-- Tasks List -->
+                <div class="space-y-4">
+                    
+                    <!-- Task 6.1 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-6-1" onchange="updateTaskState('6-1')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-6-1" class="block font-bold text-xs text-slate-200 cursor-pointer">6.1 Crear un "Calendario Demo" reluciente</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Configurar una cuenta de Google Calendar dedicada (ej: clinicasantafe.demo@gmail.com) con horarios laborales bien pulidos de lunes a viernes para las demostraciones cara a cara.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 6.2 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-6-2" onchange="updateTaskState('6-2')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-6-2" class="block font-bold text-xs text-slate-200 cursor-pointer">6.2 Elaborar Pitch comercial de 2 minutos</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Escribir un guion simple para visitas cara a cara. Enfoque: "Te ahorro horas de chat de WhatsApp para coordinar turnos y te automatizo la confirmación. Tus pacientes reservan un domingo a la noche sin interrumpirte".</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 6.3 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-6-3" onchange="updateTaskState('6-3')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-6-3" class="block font-bold text-xs text-slate-200 cursor-pointer">6.3 Reclutar 2 "Pruebas Piloto" locales gratuitas</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Ofrecer el bot secretario 15 días gratis a un barbero, odontólogo o psicólogo conocido de Santa Fe a cambio de feedback directo sobre cómo responde la IA a sus clientes.</span>
+                        </div>
+                    </div>
+
+                    <!-- Task 6.4 -->
+                    <div class="flex items-start gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 hover:bg-slate-950/70 transition-all">
+                        <input type="checkbox" id="task-6-4" onchange="updateTaskState('6-4')" class="task-check mt-1 w-4 h-4 rounded border-slate-800 text-teal-500 focus:ring-teal-500 bg-slate-900 accent-teal-500">
+                        <div class="flex-grow">
+                            <label for="task-6-4" class="block font-bold text-xs text-slate-200 cursor-pointer">6.4 Definición de precios y cobro recurrente</label>
+                            <span class="block text-[11px] text-slate-500 mt-1">Definir un abono de bajo coste recurrente mensual (SaaS) utilizando links de suscripción automáticos de Mercado Pago para facturar en piloto automático.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 border-t border-slate-900 bg-slate-950/20 text-xs text-slate-600 mt-12">
+        Plataforma interactiva para la planificación y seguimiento del SaaS de turnos para Santa Fe • 2026.
+    </footer>
+
+    <!-- JS Logic for interaction and progress saving -->
+    <script>
+        const totalTasksGlobal = 23; // 4 + 4 + 4 + 4 + 3 + 4
+
+        // Function to scroll smoothly to a phase
+        function scrollToPhase(phaseId) {
+            const el = document.getElementById(phaseId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Briefly flash border
+                el.classList.add('border-teal-500/40', 'ring-1', 'ring-teal-500/10');
+                setTimeout(() => {
+                    el.classList.remove('border-teal-500/40', 'ring-1', 'ring-teal-500/10');
+                }, 1500);
+            }
+        }
+
+        // Toggle code cheat-sheets
+        function toggleAccordion(id) {
+            const element = document.getElementById(id);
+            if (element.classList.contains('hidden')) {
+                element.classList.remove('hidden');
+            } else {
+                element.classList.add('hidden');
+            }
+        }
+
+        // Load saved state from Local Storage
+        window.onload = function() {
+            loadCheckedTasks();
+            updateCalculations();
+        };
+
+        // Update checklist counters and global values
+        function updateCalculations() {
+            // Count checked tasks
+            const checkedBoxes = document.querySelectorAll('.task-check:checked');
+            const totalChecked = checkedBoxes.length;
+            
+            // Calculate global progress
+            const percentage = Math.round((totalChecked / totalTasksGlobal) * 100);
+            
+            document.getElementById('global-progress-txt').innerText = `${percentage}%`;
+            document.getElementById('pending-tasks-count').innerText = `${totalChecked} / ${totalTasksGlobal}`;
+            
+            // Update individual phase badges
+            updatePhaseBadges();
+            
+            // Re-calculate dates and estimations
+            const currentHoursBudget = document.getElementById('hours-calculator-range').value;
+            calculateDeliveryTime(currentHoursBudget);
+        }
+
+        function updatePhaseBadges() {
+            // Helper to update badges count
+            const phases = {
+                1: ['1-1', '1-2', '1-3', '1-4'],
+                2: ['2-1', '2-2', '2-3', '2-4'],
+                3: ['3-1', '3-2', '3-3', '3-4'],
+                4: ['4-1', '4-2', '4-3', '4-4'],
+                5: ['5-1', '5-2', '5-3'],
+                6: ['6-1', '6-2', '6-3', '6-4']
+            };
+
+            for (let p in phases) {
+                let total = phases[p].length;
+                let completed = 0;
+                phases[p].forEach(taskId => {
+                    const chk = document.getElementById(`task-${taskId}`);
+                    if (chk && chk.checked) completed++;
+                });
+                document.getElementById(`phase${p}-badge`).innerText = `${completed}/${total}`;
+            }
+        }
+
+        // Handle checklist click
+        function updateTaskState(taskId) {
+            const chk = document.getElementById(`task-${taskId}`);
+            // Save state to localstorage
+            localStorage.setItem(`ws-bot-task-${taskId}`, chk.checked ? "checked" : "unchecked");
+            updateCalculations();
+        }
+
+        // Load saved checks
+        function loadCheckedTasks() {
+            const checkboxes = document.querySelectorAll('.task-check');
+            checkboxes.forEach(chk => {
+                const id = chk.id.replace('task-', '');
+                const state = localStorage.getItem(`ws-bot-task-${id}`);
+                if (state === "checked") {
+                    chk.checked = true;
+                } else {
+                    chk.checked = false;
+                }
+            });
+        }
+
+        // Interactive hours scheduler calculations
+        function calculateDeliveryTime(hours) {
+            document.getElementById('hours-display-val').innerText = `${hours} horas / semana`;
+            
+            // Estimated net project hours is 24 hours.
+            const totalEstHours = 24;
+            const weeksNeeded = Math.ceil(totalEstHours / hours);
+            
+            document.getElementById('weeks-estimated').innerText = `${weeksNeeded} semanas`;
+            document.getElementById('calc-weeks-result').innerText = `${weeksNeeded} Semanas`;
+            
+            // Calculate final date (taking May 2026 as starting base)
+            const baseDate = new Date(2026, 4, 21); // May 21 2026
+            baseDate.setDate(baseDate.getDate() + (weeksNeeded * 7));
+            
+            const options = { month: 'long', year: 'numeric' };
+            const dateStr = baseDate.toLocaleDateString('es-ES', options);
+            
+            document.getElementById('calc-date-result').innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+        }
+
+        // Clear all states
+        function resetAllProgress() {
+            if (confirm("¿Estás seguro de que querés reiniciar todo el progreso de tu checklist?")) {
+                const checkboxes = document.querySelectorAll('.task-check');
+                checkboxes.forEach(chk => {
+                    chk.checked = false;
+                    const id = chk.id.replace('task-', '');
+                    localStorage.removeItem(`ws-bot-task-${id}`);
+                });
+                updateCalculations();
+            }
+        }
+    </script>
+</body>
+</html>
