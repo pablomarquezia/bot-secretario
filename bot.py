@@ -62,7 +62,7 @@ def _formatear_libres(libres: list) -> str:
     return "Horarios libres:\n" + "\n".join(lineas)
 
 
-def procesar(historial: list) -> dict:
+def procesar(historial: list, telefono_cliente: str = "") -> dict:
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for msg in historial:
         role = "user" if msg["rol"] == "usuario" else "assistant"
@@ -90,25 +90,39 @@ def procesar(historial: list) -> dict:
             "respuesta_whatsapp": "Disculpame, tuve un problema interno. ¿Me repetís?"
         }
 
+    resultado = {
+        "respuesta": data["respuesta_whatsapp"],
+        "intencion": data["intencion"],
+        "fecha": data.get("fecha", "no_aplica"),
+        "hora": data.get("hora", "no_aplica"),
+        "nombre": data.get("nombre_cliente", "desconocido"),
+        "alerta_barbero": False,
+        "turno_agendado": False,
+    }
+
     service = obtener_service()
 
     if data["intencion"] == "agendar_turno" and data["fecha"] != "no_aplica" and data["hora"] != "no_aplica":
         if data["nombre_cliente"] == "desconocido":
-            data["respuesta_whatsapp"] = "Decime tu nombre y te agendo el turno."
+            resultado["respuesta"] = "Decime tu nombre y te agendo el turno."
         elif slot_libre(service, data["fecha"], data["hora"]):
-            reservar_turno(data["fecha"], data["hora"], data["nombre_cliente"], "vía WhatsApp")
-            data["respuesta_whatsapp"] = f"Listo {data['nombre_cliente']}, te confirmo el turno para el {data['fecha']} a las {data['hora']}."
+            reservar_turno(data["fecha"], data["hora"], data["nombre_cliente"], telefono_cliente)
+            resultado["respuesta"] = f"Listo {data['nombre_cliente']}, te confirmo el turno para el {data['fecha']} a las {data['hora']}."
+            resultado["turno_agendado"] = True
         else:
-            data["respuesta_whatsapp"] = "Ese horario ya no está disponible, perdón. ¿Querés que te muestre los libres?"
+            resultado["respuesta"] = "Ese horario ya no está disponible, perdón. ¿Querés que te muestre los libres?"
 
     if data["intencion"] == "cancelar_turno":
-        data["respuesta_whatsapp"] = "Para cancelar un turno necesito que me digas el día y horario exacto, o hablale directo al barbero."
+        resultado["respuesta"] = "Para cancelar un turno necesito que me digas el día y horario exacto, o hablale directo al barbero."
 
     if data["intencion"] == "consultar_disponibilidad":
         libres = slots_libres(service)
         if libres:
-            data["respuesta_whatsapp"] = _formatear_libres(libres)
+            resultado["respuesta"] = _formatear_libres(libres)
         else:
-            data["respuesta_whatsapp"] = "No tengo horarios libres esta semana, disculpame."
+            resultado["respuesta"] = "No tengo horarios libres esta semana, disculpame."
 
-    return data
+    if data["intencion"] in ("fuera_de_tema", "error"):
+        resultado["alerta_barbero"] = True
+
+    return resultado
