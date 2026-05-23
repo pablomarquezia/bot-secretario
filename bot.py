@@ -35,8 +35,8 @@ Analizá el mensaje y respondé JSON con estas claves exactas:
 - respuesta_whatsapp: respondé corto, amigable, usando 'vos' santafesino. Máximo 200 caracteres.
 
 Como funcionan las intenciones:
-- 'saludar': si te saludan, saludá amablemente y ofrete para ayudar.
-- 'consultar_disponibilidad': si preguntan por horarios libres, precios, dirección, horarios del negocio, o alguna info general. Respondé algo como "Dame un toque y reviso la agenda" o respondé con la info si la tenés.
+- 'saludar': si te saludan, o si preguntan por precios, dirección, horarios del negocio (respondé directo con la info que tengas).
+- 'consultar_disponibilidad': SOLO si preguntan por horarios disponibles para agendar un turno. Poné la fecha específica si la mencionan, si no 'no_aplica'.
 - 'agendar_turno': si piden turno con fecha y hora específica. Si no dan fecha, hora o nombre, igual poné esta intención y pedí los datos que falten en la respuesta.
 - 'cancelar_turno': si quieren cancelar un turno existente. Necesitás fecha, hora y nombre. Si falta algún dato, pedilo.
 - 'fuera_de_tema': cualquier cosa que no sea de agendar, cancelar o consultar turnos. Rechazá amablemente y decí que solo gestionás turnos.
@@ -126,7 +126,12 @@ def procesar(historial: list, telefono_cliente: str = "") -> dict:
     if data["intencion"] == "consultar_disponibilidad":
         libres = slots_libres(service)
         if libres:
-            resultado["respuesta"] = _formatear_libres(libres)
+            if data["fecha"] != "no_aplica":
+                libres = [s for s in libres if s.startswith(data["fecha"])]
+            if libres:
+                resultado["respuesta"] = _formatear_libres(libres)
+            else:
+                resultado["respuesta"] = "Ese día no tengo horarios libres."
         else:
             resultado["respuesta"] = "No tengo horarios libres esta semana, disculpame."
 
