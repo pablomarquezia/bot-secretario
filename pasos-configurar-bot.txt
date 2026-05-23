@@ -1,0 +1,45 @@
+1. Cuenta Google
+   - El cliente crea un Gmail nuevo (ej: barberiacandioti@gmail.com)
+   - O me pasa uno existente
+
+2. Calendario
+   - Entrar a calendar.google.com con esa cuenta
+   - Configurar horarios laborales (Configuración → Horario laboral)
+
+3. Google Cloud Console
+   - Ir a https://console.cloud.google.com (con mi cuenta de desarrollador, no la del cliente)
+   - Proyecto → APIs & Services → OAuth consent screen → Test users → + ADD USERS
+     -> Agregar el email del cliente
+   - Credenciales → + CREATE CREDENTIALS → OAuth client ID → Desktop app
+     -> Bajar el JSON como secretodelcliente.json
+
+4. Generar token desde la terminal (en el proyecto, con venv activado):
+   python auth_demo.py secretodelcliente.json
+   -> Se abre el navegador, el cliente inicia sesión en su cuenta y acepta permisos
+   -> Genera token_secretodelcliente.json
+
+5. Convertir credenciales a base64 (para Render):
+   base64 -w0 secretodelcliente.json
+   base64 -w0 token_secretodelcliente.json
+   -> Guardar ambos outputs
+
+6. Render (https://render.com)
+   - Dashboard → New + → Web Service
+   - Conectar GitHub → elegir bot-secretario
+   - Name: bot-secretario-[cliente]
+   - Start Command: uvicorn servidor:app --host 0.0.0.0 --port 10000
+   - Plan: Free
+   - Advanced → Environment Variables:
+     GROQ_API_KEY = (la misma de siempre)
+     GOOGLE_CREDENTIALS_B64 = (base64 de secretodelcliente.json)
+     GOOGLE_TOKEN_B64 = (base64 de token_secretodelcliente.json)
+   - Create Web Service
+
+7. Twilio
+   - Dashboard → Messaging → Try it out → Send a WhatsApp message
+   - Sandbox → When a message comes in:
+     Pegar URL de Render: https://bot-secretario-[cliente].onrender.com/webhook
+   - Method: HTTP POST
+   - Save
+
+8. Listo. El cliente escribe al número sandbox de Twilio y el bot responde.
