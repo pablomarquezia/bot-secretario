@@ -52,6 +52,7 @@ Al día siguiente → el cliente recibe un recordatorio automático
 | `TWILIO_WHATSAPP` | — | Número de Twilio (ej: `whatsapp:+14155238886`) |
 | `BARBERO_PHONE` | — | WhatsApp del dueño para alertas |
 | `NEGOCIO` | `barbería` | Tipo de negocio (cambia el prompt de la IA) |
+| `INFO_NEGOCIO` | — | Info del negocio: dirección, precios, horarios, redes. Se lo contás a la IA para que responda preguntas |
 | `DURACION_TURNO` | `60` | Minutos por turno |
 | `HORA_APERTURA` | `8` | Hora de apertura |
 | `HORA_CIERRE` | `18` | Hora de cierre |

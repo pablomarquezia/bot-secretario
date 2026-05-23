@@ -38,6 +38,7 @@
      TWILIO_WHATSAPP = whatsapp:+14155238886
      BARBERO_PHONE = whatsapp:+549XXXXXXXXX
      NEGOCIO = barbería (o consultorio, peluquería, etc.)
+     INFO_NEGOCIO = Barbería Candioti, Avellaneda 3071. Cortes desde $5000. IG: @candiotibarber
      DURACION_TURNO = 60 (minutos)
      HORA_APERTURA = 8
      HORA_CIERRE = 18
