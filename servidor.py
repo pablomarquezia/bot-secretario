@@ -36,7 +36,10 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
             enviar_whatsapp(pendiente["telefono"], f"📲 {pendiente['nombre']} (el dueño) te respondió:\n\n{Body}")
             marcar_alerta_respondida(pendiente["id"])
             guardar_mensaje(From, "bot", f"Respondido a {pendiente['telefono']}: {Body}")
-            return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message><![CDATA[✅ Mensaje reenviado al cliente.]]></Message></Response>""", media_type="text/xml")
+            twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
+            if twilio_client and TWILIO_WHATSAPP:
+                twilio_client.messages.create(from_=TWILIO_WHATSAPP, body="✅ Mensaje reenviado al cliente.", to=From)
+            return Response(content=twiml, media_type="text/xml")
 
 
 
@@ -60,10 +63,9 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
         respuesta = "Dame un toque que le consulto al dueño y te respondo."
         guardar_mensaje(From, "bot", respuesta)
 
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message><![CDATA[{respuesta}]]></Message>
-</Response>"""
+    twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
+    if twilio_client and TWILIO_WHATSAPP:
+        twilio_client.messages.create(from_=TWILIO_WHATSAPP, body=respuesta, to=From)
     return Response(content=twiml, media_type="text/xml")
 
 
