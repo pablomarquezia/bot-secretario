@@ -1,8 +1,12 @@
 from fastapi import FastAPI, Form, Response
 from calendario import slots_libres, reservar_turno
+from db import inicializar, guardar_mensaje, obtener_historial
 
 app = FastAPI()
-MEMORIA = {}
+
+@app.on_event("startup")
+def startup():
+    inicializar()
 
 @app.get("/")
 def root():
@@ -10,13 +14,11 @@ def root():
 
 @app.post("/webhook")
 async def webhook(From: str = Form(...), Body: str = Form(...)):
-    if From not in MEMORIA:
-        MEMORIA[From] = []
+    guardar_mensaje(From, "usuario", Body)
 
-    MEMORIA[From].append({"rol": "usuario", "msg": Body})
-
+    historial = obtener_historial(From)
     respuesta = f"Recibí: '{Body}'. Gracias {From}. En desarrollo..."
-    MEMORIA[From].append({"rol": "bot", "msg": respuesta})
+    guardar_mensaje(From, "bot", respuesta)
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
