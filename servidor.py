@@ -37,8 +37,8 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
             marcar_alerta_respondida(pendiente["id"])
             guardar_mensaje(From, "bot", f"Respondido a {pendiente['telefono']}: {Body}")
             return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message>✅ Mensaje reenviado al cliente.</Message></Response>""", media_type="application/xml")
-        guardar_mensaje(From, "bot", "No tenés alertas pendientes.")
-        return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message>No tenés alertas pendientes.</Message></Response>""", media_type="application/xml")
+
+
 
     guardar_mensaje(From, "usuario", Body)
 
