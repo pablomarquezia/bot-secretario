@@ -26,6 +26,13 @@ def guardar_mensaje(telefono: str, rol: str, mensaje: str):
             (telefono, rol, mensaje),
         )
 
+def teléfonos_con_chats() -> list[str]:
+    with _conectar() as conn:
+        rows = conn.execute(
+            "SELECT DISTINCT telefono FROM conversaciones WHERE telefono != '' ORDER BY telefono"
+        ).fetchall()
+    return [r[0] for r in rows]
+
 def obtener_historial(telefono: str, limite: int = 0) -> list[dict]:
     with _conectar() as conn:
         query = "SELECT rol, mensaje FROM conversaciones WHERE telefono = ? ORDER BY timestamp"

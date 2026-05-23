@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Form, Response, Request
 from twilio.rest import Client
-from db import inicializar, guardar_mensaje, obtener_historial, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida
+from db import inicializar, guardar_mensaje, obtener_historial, teléfonos_con_chats, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida
 from bot import procesar
 
 app = FastAPI()
@@ -83,6 +83,23 @@ def recordatorios():
 
 
 META_VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "botsecretario123")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+
+
+@app.get("/admin/chats")
+def admin_chats(token: str = ""):
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        return Response(status_code=401)
+    teléfonos = teléfonos_con_chats()
+    html = "<h1>Chats</h1>"
+    for tel in teléfonos:
+        msgs = obtener_historial(tel, 50)
+        html += f"<details><summary><b>{tel}</b> ({len(msgs)} msgs)</summary>"
+        for m in msgs:
+            color = "#2ecc71" if m["rol"] == "bot" else "#3498db"
+            html += f"<p><b style='color:{color}'>{m['rol']}:</b> {m['msg']}</p>"
+        html += "</details><hr>"
+    return Response(content=html, media_type="text/html")
 
 
 @app.get("/meta-webhook")
