@@ -35,7 +35,7 @@
      GOOGLE_TOKEN_B64 = (base64 de token_secretodelcliente.json)
      TWILIO_ACCOUNT_SID = (de Twilio)
      TWILIO_AUTH_TOKEN = (de Twilio)
-     TWILIO_WHATSAPP = whatsapp:+14155238886
+      TWILIO_WHATSAPP = whatsapp:+XXXXXXXXXXX (el número sandbox de Twilio)
      BARBERO_PHONE = whatsapp:+549XXXXXXXXX
      NEGOCIO = barbería (o consultorio, peluquería, etc.)
      INFO_NEGOCIO = Barbería Candioti, Avellaneda 3071. Cortes desde $5000. IG: @candiotibarber
