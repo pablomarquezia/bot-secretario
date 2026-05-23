@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Form, Response
 from twilio.rest import Client
-from db import inicializar, guardar_mensaje, obtener_historial, guardar_turno, turnos_manana, marcar_recordatorio
+from db import inicializar, guardar_mensaje, obtener_historial, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida
 from bot import procesar
 
 app = FastAPI()
@@ -30,6 +30,16 @@ def root():
 
 @app.post("/webhook")
 async def webhook(From: str = Form(...), Body: str = Form(...)):
+    if BARBERO_PHONE and From == BARBERO_PHONE:
+        pendiente = alerta_pendiente()
+        if pendiente:
+            enviar_whatsapp(pendiente["telefono"], f"📲 {pendiente['nombre']} (el dueño) te respondió:\n\n{Body}")
+            marcar_alerta_respondida(pendiente["id"])
+            guardar_mensaje(From, "bot", f"Respondido a {pendiente['telefono']}: {Body}")
+            return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message>✅ Mensaje reenviado al cliente.</Message></Response>""", media_type="application/xml")
+        guardar_mensaje(From, "bot", "No tenés alertas pendientes.")
+        return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message>No tenés alertas pendientes.</Message></Response>""", media_type="application/xml")
+
     guardar_mensaje(From, "usuario", Body)
 
     historial = obtener_historial(From)
@@ -42,10 +52,13 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
         guardar_turno(From, analisis["nombre"], analisis["fecha"], analisis["hora"])
 
     if analisis["alerta_barbero"] and BARBERO_PHONE:
+        guardar_alerta(From, analisis["nombre"], Body)
         enviar_whatsapp(
             BARBERO_PHONE,
-            f"⚠️ El bot no supo responder a {From}:\n\n{Body}",
+            f"⚠️ {analisis['nombre']} ({From}) preguntó:\n\n{Body}\n\nRespondé a este mensaje y se lo reenvío.",
         )
+        respuesta = "Dame un toque que le consulto al dueño y te respondo."
+        guardar_mensaje(From, "bot", respuesta)
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>

@@ -17,6 +17,7 @@ def inicializar():
             )
         """)
     inicializar_turnos()
+    inicializar_alertas()
 
 def guardar_mensaje(telefono: str, rol: str, mensaje: str):
     with _conectar() as conn:
@@ -70,3 +71,37 @@ def marcar_recordatorio(telefono: str, fecha: str, hora: str):
             "UPDATE turnos SET recordatorio_enviado = 1 WHERE telefono_cliente = ? AND fecha = ? AND hora = ?",
             (telefono, fecha, hora),
         )
+
+
+def inicializar_alertas():
+    with _conectar() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS alertas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telefono_cliente TEXT NOT NULL,
+                nombre_cliente TEXT DEFAULT '',
+                mensaje_cliente TEXT NOT NULL,
+                respondida INTEGER DEFAULT 0,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+def guardar_alerta(telefono: str, nombre: str, mensaje: str):
+    with _conectar() as conn:
+        conn.execute(
+            "INSERT INTO alertas (telefono_cliente, nombre_cliente, mensaje_cliente) VALUES (?, ?, ?)",
+            (telefono, nombre, mensaje),
+        )
+
+def alerta_pendiente() -> dict | None:
+    with _conectar() as conn:
+        row = conn.execute(
+            "SELECT id, telefono_cliente, nombre_cliente, mensaje_cliente FROM alertas WHERE respondida = 0 ORDER BY timestamp LIMIT 1"
+        ).fetchone()
+    if row:
+        return {"id": row[0], "telefono": row[1], "nombre": row[2], "mensaje": row[3]}
+    return None
+
+def marcar_alerta_respondida(alerta_id: int):
+    with _conectar() as conn:
+        conn.execute("UPDATE alertas SET respondida = 1 WHERE id = ?", (alerta_id,))
