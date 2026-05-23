@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form, Response
 from calendario import slots_libres, reservar_turno
 from db import inicializar, guardar_mensaje, obtener_historial
+from bot import procesar
 
 app = FastAPI()
 
@@ -17,7 +18,9 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
     guardar_mensaje(From, "usuario", Body)
 
     historial = obtener_historial(From)
-    respuesta = f"Recibí: '{Body}'. Gracias {From}. En desarrollo..."
+    analisis = procesar(historial)
+    respuesta = analisis["respuesta_whatsapp"]
+
     guardar_mensaje(From, "bot", respuesta)
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
