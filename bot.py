@@ -68,13 +68,26 @@ def procesar(historial: list) -> dict:
     if data["intencion"] == "consultar_disponibilidad":
         libres = slots_libres()
         if libres:
-            lineas = []
             dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
             meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-            for iso in libres[:10]:
-                dt = datetime.fromisoformat(iso)
-                linea = f"{dias[dt.weekday()]} {dt.day} de {meses[dt.month-1]} a las {dt.hour:02d}:{dt.minute:02d}"
-                lineas.append(linea)
+            dts = [datetime.fromisoformat(s) for s in libres]
+            grupos = {}
+            for dt in dts:
+                clave = dt.date()
+                grupos.setdefault(clave, []).append(dt)
+            lineas = []
+            for fecha, slots in grupos.items():
+                slots.sort()
+                inicio = slots[0]
+                fin = slots[0]
+                for s in slots[1:]:
+                    if s.hour == fin.hour + 1:
+                        fin = s
+                    else:
+                        lineas.append(f"{dias[inicio.weekday()]} {inicio.day} de {meses[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
+                        inicio = s
+                        fin = s
+                lineas.append(f"{dias[inicio.weekday()]} {inicio.day} de {meses[inicio.month-1]} de {inicio.hour:02d}:{inicio.minute:02d} a {fin.hour + 1:02d}:00")
             data["respuesta_whatsapp"] = "Horarios libres:\n" + "\n".join(lineas)
         else:
             data["respuesta_whatsapp"] = "No tengo horarios libres esta semana, disculpame."
