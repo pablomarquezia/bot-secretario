@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Form, Response
+from fastapi import FastAPI, Form, Response, Request
 from twilio.rest import Client
 from db import inicializar, guardar_mensaje, obtener_historial, guardar_turno, turnos_manana, marcar_recordatorio, guardar_alerta, alerta_pendiente, marcar_alerta_respondida
 from bot import procesar
@@ -80,3 +80,26 @@ def recordatorios():
         marcar_recordatorio(t["telefono"], t["fecha"], t["hora"])
         enviados += 1
     return {"recordatorios_enviados": enviados}
+
+
+META_VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "botsecretario123")
+
+
+@app.get("/meta-webhook")
+def meta_verificar(request: Request):
+    if request.query_params.get("hub.mode") == "subscribe" and request.query_params.get("hub.verify_token") == META_VERIFY_TOKEN:
+        return Response(content=request.query_params.get("hub.challenge", ""), media_type="text/plain")
+    return Response(status_code=403)
+
+
+@app.post("/meta-webhook")
+async def meta_recibir(request: Request):
+    body = await request.json()
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            for msg in value.get("messages", []):
+                From = f'whatsapp:+{msg["from"]}'
+                Body = msg.get("text", {}).get("body", "")
+                await webhook(From=From, Body=Body)
+    return {"status": "ok"}
