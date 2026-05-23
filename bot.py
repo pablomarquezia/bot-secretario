@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import date
+from datetime import date, datetime
 from dotenv import load_dotenv
 from groq import Groq
 from pydantic import BaseModel, Field
@@ -68,7 +68,14 @@ def procesar(historial: list) -> dict:
     if data["intencion"] == "consultar_disponibilidad":
         libres = slots_libres()
         if libres:
-            data["respuesta_whatsapp"] = "Estos son los horarios libres:\n" + "\n".join(libres[:10])
+            lineas = []
+            dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+            meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            for iso in libres[:10]:
+                dt = datetime.fromisoformat(iso)
+                linea = f"{dias[dt.weekday()]} {dt.day} de {meses[dt.month-1]} a las {dt.hour:02d}:{dt.minute:02d}"
+                lineas.append(linea)
+            data["respuesta_whatsapp"] = "Horarios libres:\n" + "\n".join(lineas)
         else:
             data["respuesta_whatsapp"] = "No tengo horarios libres esta semana, disculpame."
 
