@@ -36,7 +36,7 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
             enviar_whatsapp(pendiente["telefono"], f"📲 {pendiente['nombre']} (el dueño) te respondió:\n\n{Body}")
             marcar_alerta_respondida(pendiente["id"])
             guardar_mensaje(From, "bot", f"Respondido a {pendiente['telefono']}: {Body}")
-            return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message>✅ Mensaje reenviado al cliente.</Message></Response>""", media_type="application/xml")
+            return Response(content="""<?xml version="1.0" encoding="UTF-8"?><Response><Message><![CDATA[✅ Mensaje reenviado al cliente.]]></Message></Response>""", media_type="text/xml")
 
 
 
@@ -62,9 +62,9 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Message>{respuesta}</Message>
+    <Message><![CDATA[{respuesta}]]></Message>
 </Response>"""
-    return Response(content=twiml, media_type="application/xml")
+    return Response(content=twiml, media_type="text/xml")
 
 
 @app.get("/recordatorios")
