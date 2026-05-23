@@ -93,7 +93,9 @@ def procesar(historial: list) -> dict:
     service = obtener_service()
 
     if data["intencion"] == "agendar_turno" and data["fecha"] != "no_aplica" and data["hora"] != "no_aplica":
-        if slot_libre(service, data["fecha"], data["hora"]):
+        if data["nombre_cliente"] == "desconocido":
+            data["respuesta_whatsapp"] = "Decime tu nombre y te agendo el turno."
+        elif slot_libre(service, data["fecha"], data["hora"]):
             reservar_turno(data["fecha"], data["hora"], data["nombre_cliente"], "vía WhatsApp")
             data["respuesta_whatsapp"] = f"Listo {data['nombre_cliente']}, te confirmo el turno para el {data['fecha']} a las {data['hora']}."
         else:
