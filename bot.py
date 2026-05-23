@@ -4,7 +4,7 @@ from datetime import date, datetime
 from dotenv import load_dotenv
 from groq import Groq
 from pydantic import BaseModel, Field
-from calendario import slots_libres, slot_libre, reservar_turno, obtener_service
+from calendario import slots_libres, slot_libre, reservar_turno, cancelar_turno, obtener_service
 from config import NEGOCIO, INFO_NEGOCIO
 
 load_dotenv()
@@ -115,7 +115,13 @@ def procesar(historial: list, telefono_cliente: str = "") -> dict:
             resultado["respuesta"] = "Ese horario ya no está disponible, perdón. ¿Querés que te muestre los libres?"
 
     if data["intencion"] == "cancelar_turno":
-        resultado["respuesta"] = "Para cancelar un turno necesito que me digas el día y horario exacto, o hablale directo al barbero."
+        if data["fecha"] != "no_aplica" and data["hora"] != "no_aplica" and data["nombre_cliente"] != "desconocido":
+            if cancelar_turno(data["fecha"], data["hora"], data["nombre_cliente"]):
+                resultado["respuesta"] = f"Listo {data['nombre_cliente']}, cancelé tu turno del {data['fecha']} a las {data['hora']}."
+            else:
+                resultado["respuesta"] = "No encontré un turno a tu nombre en esa fecha y horario."
+        else:
+            resultado["respuesta"] = "Decime fecha, hora y tu nombre y te cancelo el turno."
 
     if data["intencion"] == "consultar_disponibilidad":
         libres = slots_libres(service)

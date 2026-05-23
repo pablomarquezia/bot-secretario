@@ -105,6 +105,26 @@ def reservar_turno(fecha: str, hora: str, nombre: str, telefono: str) -> str:
     return creado.get("htmlLink")
 
 
+def cancelar_turno(fecha: str, hora: str, nombre: str) -> bool:
+    inicio = f"{fecha}T{hora}:00-03:00"
+    fin_dt = datetime.fromisoformat(inicio) + timedelta(minutes=DURACION_TURNO)
+    fin = fin_dt.isoformat()
+
+    service = obtener_service()
+    eventos = service.events().list(
+        calendarId="primary",
+        timeMin=inicio,
+        timeMax=fin,
+        singleEvents=True,
+    ).execute()
+
+    for ev in eventos.get("items", []):
+        if nombre.lower() in ev.get("summary", "").lower():
+            service.events().delete(calendarId="primary", eventId=ev["id"]).execute()
+            return True
+    return False
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) >= 4:
