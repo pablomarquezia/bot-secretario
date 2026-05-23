@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from groq import Groq
 from pydantic import BaseModel, Field
 from calendario import slots_libres, slot_libre, reservar_turno, obtener_service
+from config import NEGOCIO
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -23,7 +24,7 @@ class AnalisisMensaje(BaseModel):
 
 
 SYSTEM_PROMPT = f"""
-Hoy es {HOY}. Sos el secretario virtual de una barbería en Santa Fe.
+Hoy es {HOY}. Sos el secretario virtual de una {NEGOCIO} en Santa Fe.
 
 Analizá el mensaje y respondé JSON con estas claves exactas:
 - intencion: 'saludar', 'agendar_turno', 'cancelar_turno', 'consultar_disponibilidad' o 'fuera_de_tema'

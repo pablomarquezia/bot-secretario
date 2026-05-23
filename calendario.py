@@ -1,11 +1,7 @@
 from datetime import datetime, timedelta, date, time, timezone
 from googleapiclient.discovery import build
 from auth_calendar import autenticar
-
-HORA_APERTURA = 8
-HORA_CIERRE = 18
-DURACION_TURNO = 60
-DIAS_A_CONSULTAR = 5
+from config import HORA_APERTURA, HORA_CIERRE, DURACION_TURNO, DIAS_A_CONSULTAR
 
 
 def obtener_service():
