@@ -42,7 +42,7 @@ async def webhook(From: str = Form(...), Body: str = Form(...)):
 
     guardar_mensaje(From, "usuario", Body)
 
-    historial = obtener_historial(From)
+    historial = obtener_historial(From, 15)
     analisis = procesar(historial, From)
     respuesta = analisis["respuesta"]
 

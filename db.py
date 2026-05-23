@@ -26,13 +26,16 @@ def guardar_mensaje(telefono: str, rol: str, mensaje: str):
             (telefono, rol, mensaje),
         )
 
-def obtener_historial(telefono: str) -> list[dict]:
+def obtener_historial(telefono: str, limite: int = 0) -> list[dict]:
     with _conectar() as conn:
-        rows = conn.execute(
-            "SELECT rol, mensaje FROM conversaciones WHERE telefono = ? ORDER BY timestamp",
-            (telefono,),
-        ).fetchall()
-    return [{"rol": r, "msg": m} for r, m in rows]
+        query = "SELECT rol, mensaje FROM conversaciones WHERE telefono = ? ORDER BY timestamp"
+        if limite:
+            query = f"SELECT rol, mensaje FROM conversaciones WHERE telefono = ? ORDER BY timestamp DESC LIMIT {limite}"
+        rows = conn.execute(query, (telefono,)).fetchall()
+    result = [{"rol": r, "msg": m} for r, m in rows]
+    if limite:
+        result.reverse()
+    return result
 
 
 def inicializar_turnos():
