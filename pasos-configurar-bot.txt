@@ -33,6 +33,14 @@
      GROQ_API_KEY = (la misma de siempre)
      GOOGLE_CREDENTIALS_B64 = (base64 de secretodelcliente.json)
      GOOGLE_TOKEN_B64 = (base64 de token_secretodelcliente.json)
+     TWILIO_ACCOUNT_SID = (de Twilio)
+     TWILIO_AUTH_TOKEN = (de Twilio)
+     TWILIO_WHATSAPP = whatsapp:+14155238886
+     BARBERO_PHONE = whatsapp:+549XXXXXXXXX
+     NEGOCIO = barbería (o consultorio, peluquería, etc.)
+     DURACION_TURNO = 60 (minutos)
+     HORA_APERTURA = 8
+     HORA_CIERRE = 18
    - Create Web Service
 
 7. Twilio
